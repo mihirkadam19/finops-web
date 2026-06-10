@@ -1,33 +1,50 @@
-import { useState, useCallback } from "react";
+"use client";
 
-export interface AwsCredentials {
-  accessKeyId: string;
-  secretAccessKey: string;
-  region: string;
-}
+import { useState, useCallback, useRef } from "react";
+import {
+  useExternalStoreRuntime,
+  type ThreadMessageLike,
+  type AppendMessage,
+} from "@assistant-ui/react";
+import { useConnectionsStore } from "./connectionsStore";
 
-export interface ChatMessage {
+const BACKEND_URL = "http://localhost:3001";
+
+interface InternalMessage {
   role: "user" | "assistant";
   content: string;
 }
 
-const BACKEND_URL = "http://localhost:3001";
+function convertMessage(msg: InternalMessage): ThreadMessageLike {
+  return {
+    role: msg.role,
+    content: [{ type: "text", text: msg.content }],
+  };
+}
 
-export function useFinOpsChat(encryptedCredentials: string | null) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
+export function useFinOpsRuntime() {
+  const [messages, setMessages] = useState<InternalMessage[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const messagesRef = useRef<InternalMessage[]>([]);
+  messagesRef.current = messages;
 
-  const sendMessage = useCallback(
-    async (content: string) => {
+  const encryptedCredentials = useConnectionsStore((s) => s.encryptedCredentials.aws);
+
+  const onNew = useCallback(
+    async (message: AppendMessage) => {
       if (!encryptedCredentials) {
-        throw new Error("AWS credentials are required");
+        throw new Error("Connect AWS credentials first");
       }
 
-      const userMessage: ChatMessage = { role: "user", content };
-      const newMessages = [...messages, userMessage];
-      setMessages(newMessages);
-      setIsStreaming(true);
+      const textContent = message.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text)
+        .join("");
 
+      const userMessage: InternalMessage = { role: "user", content: textContent };
+      const newMessages = [...messagesRef.current, userMessage];
+      setMessages(newMessages);
+      setIsRunning(true);
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       try {
@@ -81,11 +98,17 @@ export function useFinOpsChat(encryptedCredentials: string | null) {
           }
         }
       } finally {
-        setIsStreaming(false);
+        setIsRunning(false);
       }
     },
-    [messages, encryptedCredentials]
+    [encryptedCredentials]
   );
 
-  return { messages, sendMessage, isStreaming };
+  return useExternalStoreRuntime({
+    isRunning,
+    messages,
+    setMessages: () => {},
+    convertMessage,
+    onNew,
+  });
 }

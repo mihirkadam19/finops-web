@@ -1,5 +1,3 @@
-import type { AwsCredentials } from "./useFinOpsChat";
-
 const BACKEND_URL = "http://localhost:3001";
 
 let cachedPublicKey: CryptoKey | null = null;
@@ -36,9 +34,15 @@ function bufToBase64(buf: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
 
+export interface AwsCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+  region: string;
+}
+
 /**
- * Encrypts AWS credentials with the backend's RSA public key.
- * Only the backend's private key (held server-side) can decrypt this.
+ * Encrypts credentials with the backend's RSA public key.
+ * Returns ciphertext — only the backend's private key can decrypt it.
  */
 export async function encryptCredentials(credentials: AwsCredentials): Promise<string> {
   const publicKey = await getPublicKey();
