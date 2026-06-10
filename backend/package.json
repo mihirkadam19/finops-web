@@ -1,0 +1,24 @@
+{
+  "name": "finops-web-backend",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "@aws-sdk/client-cost-explorer": "^3.0.0",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/helmet": "^11.0.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^4.0.0",
+    "finops-mcp-server": "github:mihirkadam19/finops-mcp-server#v1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
