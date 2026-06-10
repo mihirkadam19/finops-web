@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import { chatRoutes } from "./routes/chat.js";
 import { credentialsRoutes } from "./routes/credentials.js";
+import { publicKeyRoutes } from "./routes/publicKey.js";
 
 async function main() {
   const fastify = Fastify({ logger: true });
@@ -13,6 +14,7 @@ async function main() {
 
   await fastify.register(chatRoutes);
   await fastify.register(credentialsRoutes);
+  await fastify.register(publicKeyRoutes);
 
   fastify.get("/health", async () => ({ status: "ok" }));
 
