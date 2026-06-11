@@ -9,7 +9,7 @@ import { publicKeyRoutes } from "./routes/publicKey.js";
 async function main() {
   const fastify = Fastify({ logger: true });
 
-  await fastify.register(cors, { origin: "http://localhost:5173" });
+  await fastify.register(cors, { origin: "http://localhost:3000" });
   await fastify.register(helmet, { contentSecurityPolicy: false });
 
   await fastify.register(chatRoutes);

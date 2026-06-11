@@ -31,7 +31,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: "Invalid AWS credentials" });
     }
 
-    reply.raw.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+    reply.raw.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
     reply.raw.setHeader("Content-Type", "text/event-stream");
     reply.raw.setHeader("Cache-Control", "no-cache");
     reply.raw.setHeader("Connection", "keep-alive");
