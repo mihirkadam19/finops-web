@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { encryptCredentials } from "@/lib/secureCredentials";
 import { useConnectionsStore } from "@/lib/connectionsStore";
+import { BACKEND_API_URL } from "@/app/api/backend/api";
 
-const BACKEND_URL = "http://localhost:3001";
 
 const REGIONS = [
   "us-east-1", "us-east-2", "us-west-1", "us-west-2",
@@ -34,7 +34,7 @@ export function AwsCredentialsModal({ open, onClose }: AwsCredentialsModalProps)
     try {
       const encrypted = await encryptCredentials({ accessKeyId, secretAccessKey, region });
 
-      const response = await fetch(`${BACKEND_URL}/api/validate-credentials`, {
+      const response = await fetch(`${BACKEND_API_URL}/api/validate-credentials`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ encryptedCredentials: encrypted }),

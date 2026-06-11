@@ -1,4 +1,4 @@
-const BACKEND_URL = "http://localhost:3001";
+import { BACKEND_API_URL } from "@/app/api/backend/api";
 
 let cachedPublicKey: CryptoKey | null = null;
 
@@ -16,7 +16,7 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 async function getPublicKey(): Promise<CryptoKey> {
   if (cachedPublicKey) return cachedPublicKey;
 
-  const response = await fetch(`${BACKEND_URL}/api/public-key`);
+  const response = await fetch(`${BACKEND_API_URL}/api/public-key`);
   const { publicKey: pem } = await response.json();
 
   cachedPublicKey = await crypto.subtle.importKey(

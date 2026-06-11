@@ -7,8 +7,8 @@ import {
   type AppendMessage,
 } from "@assistant-ui/react";
 import { useConnectionsStore } from "./connectionsStore";
+import { BACKEND_API_URL } from "@/app/api/backend/api";
 
-const BACKEND_URL = "http://localhost:3001";
 
 interface InternalMessage {
   role: "user" | "assistant";
@@ -48,7 +48,7 @@ export function useFinOpsRuntime() {
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       try {
-        const response = await fetch(`${BACKEND_URL}/api/chat`, {
+        const response = await fetch(`${BACKEND_API_URL}/api/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: newMessages, encryptedCredentials }),
