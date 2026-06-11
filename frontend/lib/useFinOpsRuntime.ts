@@ -29,11 +29,12 @@ export function useFinOpsRuntime() {
   messagesRef.current = messages;
 
   const encryptedCredentials = useConnectionsStore((s) => s.encryptedCredentials.aws);
+  const encryptedAzureCredentials = useConnectionsStore((s) => s.encryptedCredentials.azure);
 
   const onNew = useCallback(
     async (message: AppendMessage) => {
-      if (!encryptedCredentials) {
-        throw new Error("Connect AWS credentials first");
+      if (!encryptedCredentials && !encryptedAzureCredentials) {
+        throw new Error("Connect AWS or Azure credentials first");
       }
 
       const textContent = message.content
@@ -51,7 +52,7 @@ export function useFinOpsRuntime() {
         const response = await fetch(`${BACKEND_API_URL}/api/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: newMessages, encryptedCredentials }),
+          body: JSON.stringify({ messages: newMessages, encryptedCredentials, encryptedAzureCredentials }),
         });
 
         if (!response.body) throw new Error("No response body");
@@ -101,7 +102,7 @@ export function useFinOpsRuntime() {
         setIsRunning(false);
       }
     },
-    [encryptedCredentials]
+    [encryptedCredentials, encryptedAzureCredentials]
   );
 
   return useExternalStoreRuntime({

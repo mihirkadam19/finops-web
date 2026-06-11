@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProviderTile } from "@/components/connections/ProviderTile";
 import { AwsCredentialsModal } from "@/components/connections/AwsCredentialsModal";
+import { AzureCredentialsModal } from "@/components/connections/AzureCredentialsModal";
 import { useConnectionsStore } from "@/lib/connectionsStore";
 
 export default function Home() {
   const [awsModalOpen, setAwsModalOpen] = useState(false);
+  const [azureModalOpen, setAzureModalOpen] = useState(false);
   const router = useRouter();
   const isConfigured = useConnectionsStore((s) => s.isConfigured);
   const encryptedCredentials = useConnectionsStore((s) => s.encryptedCredentials);
@@ -24,11 +26,15 @@ export default function Home() {
           configured={isConfigured("aws")}
           onClick={() => setAwsModalOpen(true)}
         />
-        <ProviderTile name="Azure" configured={isConfigured("azure")} onClick={() => {}} />
+        <ProviderTile
+          name="Azure"
+          configured={isConfigured("azure")}
+          onClick={() => setAzureModalOpen(true)}
+        />
         <ProviderTile name="GCP" configured={isConfigured("gcp")} onClick={() => {}} />
       </div>
 
-      {isConfigured("aws") && (
+      {(isConfigured("aws") || isConfigured("azure")) && (
         <button
           onClick={() => router.push("/chat")}
           className="rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground hover:opacity-90"
@@ -38,6 +44,7 @@ export default function Home() {
       )}
 
       <AwsCredentialsModal open={awsModalOpen} onClose={() => setAwsModalOpen(false)} />
+      <AzureCredentialsModal open={azureModalOpen} onClose={() => setAzureModalOpen(false)} />
     </main>
   );
 }

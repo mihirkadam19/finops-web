@@ -4,7 +4,11 @@ import {
   detectAnomalies,
   getIdleResources,
   getTaggingCompliance,
+  getAzureCostSummary,
+  getAzureIdleResources,
+  detectAzureAnomalies,
   type AwsCredentials,
+  type AzureCredentials,
 } from "finops-mcp-server/tools";
 
 const client = new Anthropic({
@@ -102,26 +106,83 @@ const TOOLS: Anthropic.Tool[] = [
       },
     },
   },
+  {
+    name: "get_azure_cost_summary",
+    description: "Fetches Azure cost breakdown by service and resource group for a given time period.",
+    input_schema: {
+      type: "object",
+      properties: {
+        period: {
+          type: "string",
+          enum: ["last_7_days", "last_30_days", "last_3_months"],
+          description: "Preset time period",
+        },
+        group_by: {
+          type: "string",
+          enum: ["service", "resource_group", "both"],
+        },
+      },
+    },
+  },
+  {
+    name: "get_azure_idle_resources",
+    description: "Identifies idle/underutilized Azure VMs based on average CPU usage.",
+    input_schema: {
+      type: "object",
+      properties: {
+        min_idle_days: { type: "number" },
+        cpu_threshold_percent: { type: "number" },
+      },
+    },
+  },
+  {
+    name: "detect_azure_cost_anomalies",
+    description: "Detects daily Azure cost spikes compared to the period average.",
+    input_schema: {
+      type: "object",
+      properties: {
+        lookback_days: { type: "number" },
+        min_spike_percentage: { type: "number" },
+      },
+    },
+  },
 ];
 
 async function executeTool(
   toolName: string,
   toolInput: Record<string, unknown>,
-  credentials: AwsCredentials
+  awsCredentials: AwsCredentials | undefined,
+  azureCredentials?: AzureCredentials
 ): Promise<unknown> {
+  const AWS_TOOLS = ["get_cost_summary", "detect_cost_anomalies", "get_idle_resources", "get_tagging_compliance"];
+  if (AWS_TOOLS.includes(toolName) && !awsCredentials) {
+    throw new Error("AWS credentials not configured");
+  }
+
   switch (toolName) {
     case "get_cost_summary":
-      return getCostSummary(toolInput as Parameters<typeof getCostSummary>[0], credentials);
+      return getCostSummary(toolInput as Parameters<typeof getCostSummary>[0], awsCredentials!);
     case "detect_cost_anomalies":
-      return detectAnomalies(toolInput as Parameters<typeof detectAnomalies>[0], credentials);
+      return detectAnomalies(toolInput as Parameters<typeof detectAnomalies>[0], awsCredentials!);
     case "get_idle_resources":
-      return getIdleResources(toolInput as Parameters<typeof getIdleResources>[0], credentials);
+      return getIdleResources(toolInput as Parameters<typeof getIdleResources>[0], awsCredentials!);
     case "get_tagging_compliance":
-      return getTaggingCompliance(toolInput as Parameters<typeof getTaggingCompliance>[0], credentials);
+      return getTaggingCompliance(toolInput as Parameters<typeof getTaggingCompliance>[0], awsCredentials!);
+    case "get_azure_cost_summary":
+      if (!azureCredentials) throw new Error("Azure credentials not configured");
+      return getAzureCostSummary(toolInput as Parameters<typeof getAzureCostSummary>[0], azureCredentials);
+    case "get_azure_idle_resources":
+      if (!azureCredentials) throw new Error("Azure credentials not configured");
+      return getAzureIdleResources(toolInput as Parameters<typeof getAzureIdleResources>[0], azureCredentials);
+    case "detect_azure_cost_anomalies":
+      if (!azureCredentials) throw new Error("Azure credentials not configured");
+      return detectAzureAnomalies(toolInput as Parameters<typeof detectAzureAnomalies>[0], azureCredentials);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
 }
+
+
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -134,16 +195,45 @@ export interface AwsCredentialsInput {
   region: string;
 }
 
+export interface AzureCredentialsInput {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  subscriptionId: string;
+}
+
+
 export async function chat(
   messages: ChatMessage[],
-  credentials: AwsCredentialsInput,
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  credentials?: AwsCredentialsInput,
+  azureCredentials?: AzureCredentialsInput,
 ): Promise<void> {
-  const awsCredentials: AwsCredentials = {
-    accessKeyId: credentials.accessKeyId,
-    secretAccessKey: credentials.secretAccessKey,
-    region: credentials.region,
-  };
+  const awsCredentials: AwsCredentials | undefined = credentials
+    ? {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+        region: credentials.region,
+      }
+    : undefined;
+
+  const azureCreds: AzureCredentials | undefined = azureCredentials
+    ? {
+        tenantId: azureCredentials.tenantId,
+        clientId: azureCredentials.clientId,
+        clientSecret: azureCredentials.clientSecret,
+        subscriptionId: azureCredentials.subscriptionId,
+      }
+    : undefined;
+
+  const AWS_TOOL_NAMES = ["get_cost_summary", "detect_cost_anomalies", "get_idle_resources", "get_tagging_compliance"];
+  const AZURE_TOOL_NAMES = ["get_azure_cost_summary", "get_azure_idle_resources", "detect_azure_cost_anomalies"];
+
+  const availableTools = TOOLS.filter((tool) => {
+    if (AWS_TOOL_NAMES.includes(tool.name)) return Boolean(awsCredentials);
+    if (AZURE_TOOL_NAMES.includes(tool.name)) return Boolean(azureCreds);
+    return true;
+  });
 
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
     role: m.role,
@@ -157,7 +247,7 @@ export async function chat(
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: anthropicMessages,
-      tools: TOOLS,
+      tools: availableTools,
     });
 
     // Stream any text content back to the client
@@ -192,7 +282,8 @@ export async function chat(
           const result = await executeTool(
             block.name,
             block.input as Record<string, unknown>,
-            awsCredentials
+            awsCredentials,
+            azureCreds
           );
 
           toolResults.push({

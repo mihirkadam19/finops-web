@@ -40,19 +40,26 @@ export interface AwsCredentials {
   region: string;
 }
 
+export interface AzureCredentials {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  subscriptionId: string;
+}
+
 /**
  * Encrypts credentials with the backend's RSA public key.
  * Returns ciphertext — only the backend's private key can decrypt it.
  */
-export async function encryptCredentials(credentials: AwsCredentials): Promise<string> {
+export async function encryptCredentials(
+  credentials: AwsCredentials | AzureCredentials
+): Promise<string> {
   const publicKey = await getPublicKey();
   const encoded = new TextEncoder().encode(JSON.stringify(credentials));
-
   const ciphertext = await crypto.subtle.encrypt(
     { name: "RSA-OAEP" },
     publicKey,
     encoded
   );
-
   return bufToBase64(ciphertext);
 }

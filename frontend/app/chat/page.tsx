@@ -8,7 +8,7 @@ import { useConnectionsStore } from "@/lib/connectionsStore";
 
 export default function ChatPage() {
   const router = useRouter();
-  const isConfigured = useConnectionsStore((s) => s.isConfigured("aws"));
+  const isConfigured = useConnectionsStore((s) => s.isConfigured("aws") || s.isConfigured("azure"));
   const runtime = useFinOpsRuntime();
 
   return (
@@ -20,10 +20,10 @@ export default function ChatPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="w-full max-w-sm rounded-xl bg-card p-8 text-center shadow-xl">
               <h2 className="mb-2 text-xl font-semibold text-card-foreground">
-                AWS credentials required
+                Cloud credentials required
               </h2>
               <p className="mb-6 text-base text-muted-foreground">
-                Connect your AWS account before starting a chat.
+                Connect an AWS or Azure account before starting a chat.
               </p>
               <button
                 onClick={() => router.push("/")}

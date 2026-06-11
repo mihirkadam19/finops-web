@@ -10,11 +10,13 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
     "@aws-sdk/client-cost-explorer": "^3.0.0",
+    "@azure/arm-resources": "^7.0.0",
+    "@azure/identity": "^4.13.1",
     "@fastify/cors": "^9.0.0",
     "@fastify/helmet": "^11.0.0",
     "dotenv": "^17.4.2",
     "fastify": "^4.0.0",
-    "finops-mcp-server": "github:mihirkadam19/finops-mcp-server#v1.1.0"
+    "finops-mcp-server": "github:mihirkadam19/finops-mcp-server#v2.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

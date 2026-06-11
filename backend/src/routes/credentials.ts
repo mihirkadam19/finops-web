@@ -1,5 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { CostExplorerClient, GetCostAndUsageCommand } from "@aws-sdk/client-cost-explorer";
+import { ClientSecretCredential } from "@azure/identity";
+import { ResourceManagementClient } from "@azure/arm-resources";
 import { decryptWithPrivateKey } from "../services/keypair.js";
 
 interface CredentialsBody {
@@ -52,6 +54,43 @@ export async function credentialsRoutes(fastify: FastifyInstance) {
       return reply.status(401).send({
         valid: false,
         error: error instanceof Error ? error.message : "Invalid credentials",
+      });
+    }
+  });
+
+  fastify.post<{ Body: CredentialsBody }>("/api/validate-azure-credentials", async (request, reply) => {
+    const { encryptedCredentials } = request.body;
+
+    if (!encryptedCredentials) {
+      return reply.status(400).send({ error: "encryptedCredentials is required" });
+    }
+
+    let tenantId: string, clientId: string, clientSecret: string, subscriptionId: string;
+    try {
+      const decrypted = decryptWithPrivateKey(encryptedCredentials);
+      ({ tenantId, clientId, clientSecret, subscriptionId } = JSON.parse(decrypted));
+    } catch {
+      return reply.status(400).send({ error: "Failed to decrypt credentials" });
+    }
+
+    if (!tenantId || !clientId || !clientSecret || !subscriptionId) {
+      return reply.status(400).send({ error: "All Azure credential fields are required" });
+    }
+
+    try {
+      const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+      const client = new ResourceManagementClient(credential, subscriptionId);
+
+      // Lightweight check: list resource groups (requires only Reader role,
+      // works regardless of Cost Management API availability)
+      const iterator = client.resourceGroups.list();
+      await iterator.next();
+
+      return reply.send({ valid: true });
+    } catch (error) {
+      return reply.status(401).send({
+        valid: false,
+        error: error instanceof Error ? error.message : "Invalid Azure credentials",
       });
     }
   });
