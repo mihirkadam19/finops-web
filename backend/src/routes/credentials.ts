@@ -3,13 +3,14 @@ import { CostExplorerClient, GetCostAndUsageCommand } from "@aws-sdk/client-cost
 import { ClientSecretCredential } from "@azure/identity";
 import { ResourceManagementClient } from "@azure/arm-resources";
 import { decryptWithPrivateKey } from "../services/keypair.js";
+import { requireAuth } from "../plugins/auth.js";
 
 interface CredentialsBody {
   encryptedCredentials: string;
 }
 
 export async function credentialsRoutes(fastify: FastifyInstance) {
-  fastify.post<{ Body: CredentialsBody }>("/api/validate-credentials", async (request, reply) => {
+  fastify.post<{ Body: CredentialsBody }>("/api/validate-credentials", { preHandler: requireAuth }, async (request, reply) => {
     const { encryptedCredentials } = request.body;
 
     if (!encryptedCredentials) {
@@ -58,7 +59,7 @@ export async function credentialsRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post<{ Body: CredentialsBody }>("/api/validate-azure-credentials", async (request, reply) => {
+  fastify.post<{ Body: CredentialsBody }>("/api/validate-azure-credentials", { preHandler: requireAuth }, async (request, reply) => {
     const { encryptedCredentials } = request.body;
 
     if (!encryptedCredentials) {

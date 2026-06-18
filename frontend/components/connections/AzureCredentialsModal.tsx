@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { encryptCredentials } from "@/lib/secureCredentials";
 import { useConnectionsStore } from "@/lib/connectionsStore";
-import { BACKEND_API_URL } from "@/app/api/backend/api";
 
 interface AzureCredentialsModalProps {
   open: boolean;
@@ -34,7 +33,7 @@ export function AzureCredentialsModal({ open, onClose }: AzureCredentialsModalPr
         subscriptionId,
       });
 
-      const response = await fetch(`${BACKEND_API_URL}/api/validate-azure-credentials`, {
+      const response = await fetch("/api/proxy/validate-azure-credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ encryptedCredentials: encrypted }),

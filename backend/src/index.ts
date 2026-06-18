@@ -2,6 +2,7 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import cookie from "@fastify/cookie";
 import { chatRoutes } from "./routes/chat.js";
 import { credentialsRoutes } from "./routes/credentials.js";
 import { publicKeyRoutes } from "./routes/publicKey.js";
@@ -9,8 +10,12 @@ import { publicKeyRoutes } from "./routes/publicKey.js";
 async function main() {
   const fastify = Fastify({ logger: true });
 
-  await fastify.register(cors, { origin: "http://localhost:3000" });
+  await fastify.register(cors, {
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    credentials: true,
+  });
   await fastify.register(helmet, { contentSecurityPolicy: false });
+  await fastify.register(cookie);
 
   await fastify.register(chatRoutes);
   await fastify.register(credentialsRoutes);

@@ -6,6 +6,7 @@ import { ProviderTile } from "@/components/connections/ProviderTile";
 import { AwsCredentialsModal } from "@/components/connections/AwsCredentialsModal";
 import { AzureCredentialsModal } from "@/components/connections/AzureCredentialsModal";
 import { useConnectionsStore } from "@/lib/connectionsStore";
+import { authClient } from "@/lib/auth-client";
 
 export default function Home() {
   const [awsModalOpen, setAwsModalOpen] = useState(false);
@@ -15,8 +16,19 @@ export default function Home() {
   const encryptedCredentials = useConnectionsStore((s) => s.encryptedCredentials);
   void encryptedCredentials;
 
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    router.push("/login");
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-12 bg-background p-8">
+      <button
+        onClick={handleSignOut}
+        className="absolute right-6 top-6 rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+      >
+        Sign out
+      </button>
       <h1 className="text-4xl font-semibold text-foreground">Cloud FinOps Analyst</h1>
       <p className="text-base text-muted-foreground">Connect a cloud provider to get started</p>
 

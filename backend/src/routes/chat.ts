@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { chat, type ChatMessage, type AwsCredentialsInput, type AzureCredentialsInput } from "../services/anthropic.js";
 import { decryptWithPrivateKey } from "../services/keypair.js";
+import { requireAuth } from "../plugins/auth.js";
 
 interface ChatBody {
   messages: ChatMessage[];
@@ -9,7 +10,7 @@ interface ChatBody {
 }
 
 export async function chatRoutes(fastify: FastifyInstance) {
-  fastify.post<{ Body: ChatBody }>("/api/chat", async (request, reply) => {
+  fastify.post<{ Body: ChatBody }>("/api/chat", { preHandler: requireAuth }, async (request, reply) => {
     const { messages, encryptedCredentials, encryptedAzureCredentials } = request.body;
 
     if (!messages?.length) {
