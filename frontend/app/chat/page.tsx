@@ -1,20 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
+import { Navbar } from "@/components/ui/navbar";
 import { useFinOpsRuntime } from "@/lib/useFinOpsRuntime";
 import { useConnectionsStore } from "@/lib/connectionsStore";
 
-export default function ChatPage() {
-  const router = useRouter();
-  const isConfigured = useConnectionsStore((s) => s.isConfigured("aws") || s.isConfigured("azure"));
+function ChatContent() {
   const runtime = useFinOpsRuntime();
-
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="relative h-screen">
-        <Thread />
+      <Thread />
+    </AssistantRuntimeProvider>
+  );
+}
+
+export default function ChatPage() {
+  const router = useRouter();
+  const [chatKey, setChatKey] = useState(0);
+  const isConfigured = useConnectionsStore((s) => s.isConfigured("aws") || s.isConfigured("azure"));
+
+  return (
+    <div className="flex h-screen flex-col">
+      <Navbar onNewChat={() => setChatKey((k) => k + 1)} />
+
+      <div className="relative flex-1 overflow-hidden">
+        <ChatContent key={chatKey} />
 
         {!isConfigured && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -35,6 +48,6 @@ export default function ChatPage() {
           </div>
         )}
       </div>
-    </AssistantRuntimeProvider>
+    </div>
   );
 }
